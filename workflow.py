@@ -10,8 +10,8 @@ Example workflow (spec -> implement -> review -> loop until passing):
     workflow = (
         Workflow("code_review_loop")
         .add_node("spec", SpecWriterNode(model="claude-sonnet-4-20250514", backend="claude"))
-        .add_node("implement", ImplementerNode(model="llama3.2:3b"))
-        .add_node("review", ReviewerNode(model="gemma3:1b", pass_threshold=90))
+        .add_node("implement", ImplementerNode())
+        .add_node("review", ReviewerNode(pass_threshold=90))
         .add_edge("spec", "implement")
         .add_edge("implement", "review")
         .add_conditional_edge(
@@ -37,6 +37,7 @@ from typing import Any, Callable, TypedDict
 
 from langgraph.graph import StateGraph, END
 
+from config import DEFAULT_MODEL, DEFAULT_BACKEND
 from personas import get_llm
 from tools import ALL_TOOLS
 from handoffs import WorkflowRun, list_runs, get_run, print_run_summary
@@ -91,8 +92,8 @@ class Node(ABC):
 @dataclass
 class LLMNode(Node):
     """Node that invokes an LLM with a prompt template."""
-    model: str = "gemma3:1b"
-    backend: str = "ollama"
+    model: str = DEFAULT_MODEL
+    backend: str = DEFAULT_BACKEND
     system_prompt: str = "You are a helpful assistant."
     prompt_template: str = "{task}"
     output_key: str = "response"
@@ -251,8 +252,8 @@ Review this code against the specification. Output SCORE and FEEDBACK."""
 @dataclass
 class ToolNode(Node):
     """Node that can use tools to complete tasks."""
-    model: str = "llama3.2:3b"
-    backend: str = "ollama"
+    model: str = DEFAULT_MODEL
+    backend: str = DEFAULT_BACKEND
     system_prompt: str = "You are a helpful assistant with access to tools."
     prompt_template: str = "{task}"
     output_key: str = "result"
@@ -486,10 +487,10 @@ class Workflow:
 def create_spec_implement_review_workflow(
     spec_model: str = "claude-sonnet-4-20250514",
     spec_backend: str = "claude",
-    impl_model: str = "llama3.2:3b",
-    impl_backend: str = "ollama",
-    review_model: str = "gemma3:1b",
-    review_backend: str = "ollama",
+    impl_model: str = DEFAULT_MODEL,
+    impl_backend: str = DEFAULT_BACKEND,
+    review_model: str = DEFAULT_MODEL,
+    review_backend: str = DEFAULT_BACKEND,
     pass_threshold: int = 90,
 ) -> Workflow:
     """Create a workflow: spec -> implement -> review -> loop until passing.
@@ -541,13 +542,13 @@ def main():
     parser.add_argument("-w", "--workflow", default="spec_implement_review",
                         choices=["spec_implement_review"],
                         help="Workflow to run")
-    parser.add_argument("--spec-model", default="gemma3:1b",
+    parser.add_argument("--spec-model", default=DEFAULT_MODEL,
                         help="Model for spec writing")
-    parser.add_argument("--spec-backend", default="ollama",
+    parser.add_argument("--spec-backend", default=DEFAULT_BACKEND,
                         help="Backend for spec model")
-    parser.add_argument("--impl-model", default="llama3.2:3b",
+    parser.add_argument("--impl-model", default=DEFAULT_MODEL,
                         help="Model for implementation")
-    parser.add_argument("--review-model", default="gemma3:1b",
+    parser.add_argument("--review-model", default=DEFAULT_MODEL,
                         help="Model for review")
     parser.add_argument("--threshold", type=int, default=85,
                         help="Pass threshold for review (0-100)")

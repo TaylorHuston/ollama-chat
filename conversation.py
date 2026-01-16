@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from config import DEFAULT_MODEL, DEFAULT_BACKEND
 from sessions import Session, list_sessions, DEFAULT_SESSIONS_DIR
 from personas import get_llm, send_message
 from workflow import create_spec_implement_review_workflow
@@ -324,14 +325,14 @@ Examples:
     parser.add_argument("-d", "--description", default="", help="Session description (for new sessions)")
 
     # Model options
-    parser.add_argument("-m", "--model", default="gemma3:1b", help="Model for conversation")
+    parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Model for conversation")
     parser.add_argument("-b", "--backend", default="ollama", help="Backend (ollama/claude)")
 
     # Workflow options
-    parser.add_argument("--spec-model", default="gemma3:1b", help="Model for spec writing")
+    parser.add_argument("--spec-model", default=DEFAULT_MODEL, help="Model for spec writing")
     parser.add_argument("--spec-backend", default="ollama", help="Backend for spec model")
-    parser.add_argument("--impl-model", default="llama3.2:3b", help="Model for implementation")
-    parser.add_argument("--review-model", default="gemma3:1b", help="Model for review")
+    parser.add_argument("--impl-model", default=DEFAULT_MODEL, help="Model for implementation")
+    parser.add_argument("--review-model", default=DEFAULT_MODEL, help="Model for review")
     parser.add_argument("--threshold", type=int, default=85, help="Pass threshold (0-100)")
     parser.add_argument("--max-iter", type=int, default=5, help="Max workflow iterations")
 

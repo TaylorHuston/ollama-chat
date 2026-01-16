@@ -22,6 +22,8 @@ import shlex
 import sys
 from typing import Optional
 
+from config import DEFAULT_MODEL, DEFAULT_BACKEND
+
 # Rich for nice output (comes with typer[all])
 try:
     from rich.console import Console
@@ -42,8 +44,8 @@ class State:
     """Global REPL state."""
     def __init__(self):
         self.current_session: Optional[str] = None
-        self.model: str = "gemma3:1b"
-        self.backend: str = "ollama"
+        self.model: str = DEFAULT_MODEL
+        self.backend: str = DEFAULT_BACKEND
         self.running: bool = True
 
 state = State()
@@ -274,7 +276,7 @@ def cmd_session(args: list[str]):
     wf_args = Args()
     wf_args.spec_model = state.model
     wf_args.spec_backend = state.backend
-    wf_args.impl_model = "llama3.2:3b"
+    wf_args.impl_model = DEFAULT_MODEL
     wf_args.review_model = state.model
     wf_args.threshold = 85
     wf_args.max_iter = 5
@@ -379,7 +381,7 @@ Workflow: spec_implement_review
     wf = create_spec_implement_review_workflow(
         spec_model=state.model,
         spec_backend=state.backend,
-        impl_model="llama3.2:3b",
+        impl_model=DEFAULT_MODEL,
         review_model=state.model,
         pass_threshold=85,
     )
@@ -407,10 +409,10 @@ def cmd_agent(args: list[str]):
 
     if args:
         task = " ".join(args)
-        run_agent(task, backend=state.backend, model="llama3.2:3b", max_iterations=10)
+        run_agent(task, backend=state.backend, model=state.model, max_iterations=10)
     else:
         # Interactive agent mode
-        echo(f"🤖 Agent: {state.backend}:llama3.2:3b")
+        echo(f"🤖 Agent: {state.backend}:{state.model}")
         echo("Type a task or 'quit' to exit.\n")
 
         while True:
@@ -423,7 +425,7 @@ def cmd_agent(args: list[str]):
             if task_input.lower() in ("quit", "exit", "q", ""):
                 break
 
-            run_agent(task_input, backend=state.backend, model="llama3.2:3b", max_iterations=10)
+            run_agent(task_input, backend=state.backend, model=state.model, max_iterations=10)
             echo()
 
 

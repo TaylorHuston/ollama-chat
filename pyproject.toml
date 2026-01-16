@@ -21,6 +21,7 @@ dependencies = [
 [project.scripts]
 ollama-chat = "cli:main"
 oc = "cli:main"
+oc-build = "build_workflow:main"
 
 [project.optional-dependencies]
 dev = [
@@ -38,9 +39,14 @@ py-modules = [
     "batch",
     "agent",
     "workflow",
+    "build_workflow",
     "conversation",
     "sessions",
     "handoffs",
     "personas",
     "tools",
+    "config",
 ]
+
+[tool.setuptools.package-data]
+"*" = ["agents.json"]

@@ -23,6 +23,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+from config import DEFAULT_MODEL, DEFAULT_BACKEND
+
 
 # =============================================================================
 # CONFIGURATION
@@ -56,8 +58,8 @@ class SessionMeta:
     name: str
     created_at: str
     updated_at: str
-    model: str = "gemma3:1b"
-    backend: str = "ollama"
+    model: str = DEFAULT_MODEL
+    backend: str = DEFAULT_BACKEND
     message_count: int = 0
     has_spec: bool = False
     workflow_runs: list[str] = field(default_factory=list)
@@ -82,8 +84,8 @@ class Session:
         self,
         name: str,
         sessions_dir: Path | str = DEFAULT_SESSIONS_DIR,
-        model: str = "gemma3:1b",
-        backend: str = "ollama",
+        model: str = DEFAULT_MODEL,
+        backend: str = DEFAULT_BACKEND,
     ):
         self.name = name
         self.sessions_dir = Path(sessions_dir)
@@ -280,8 +282,8 @@ def list_sessions(sessions_dir: Path | str = DEFAULT_SESSIONS_DIR) -> list[Sessi
 def get_session(
     name: str,
     sessions_dir: Path | str = DEFAULT_SESSIONS_DIR,
-    model: str = "gemma3:1b",
-    backend: str = "ollama",
+    model: str = DEFAULT_MODEL,
+    backend: str = DEFAULT_BACKEND,
 ) -> Session:
     """Get or create a session."""
     session = Session(name, sessions_dir, model, backend)

@@ -2,26 +2,17 @@
 """AI agent with tool-calling capabilities."""
 
 import argparse
-from langchain_ollama import ChatOllama
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from config import DEFAULT_MODEL, DEFAULT_BACKEND
+from personas import get_llm
 from tools import ALL_TOOLS
-
-
-def get_llm(backend: str, model: str):
-    """Get a LangChain chat model."""
-    if backend == "ollama":
-        return ChatOllama(model=model)
-    elif backend == "claude":
-        return ChatAnthropic(model_name=model)
-    else:
-        raise ValueError(f"Unknown backend: {backend}")
 
 
 def run_agent(
     task: str,
-    backend: str = "ollama",
-    model: str = "llama3.2:3b",
+    backend: str = DEFAULT_BACKEND,
+    model: str = DEFAULT_MODEL,
     max_iterations: int = 10,
 ):
     """Run an agent with tools to complete a task."""
@@ -95,7 +86,7 @@ def main():
     parser = argparse.ArgumentParser(description="AI agent with tools")
     parser.add_argument("task", nargs="?", help="Task for the agent")
     parser.add_argument("-b", "--backend", default="ollama", choices=["ollama", "claude"])
-    parser.add_argument("-m", "--model", default="llama3.2:3b", help="Model to use (must support tools)")
+    parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Model to use (must support tools)")
     parser.add_argument("--max-iter", type=int, default=10, help="Max iterations")
 
     args = parser.parse_args()

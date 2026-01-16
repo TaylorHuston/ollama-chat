@@ -1,21 +1,77 @@
-"""Shared persona loading and LangChain-based AI backends."""
+"""Shared agent loading and LangChain-based AI backends."""
 
-import json
+import subprocess
 from pathlib import Path
 
 from langchain_ollama import ChatOllama
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
+from config import DEFAULT_MODEL, DEFAULT_BACKEND, get_agent_config, list_agents
 
-def get_llm(backend: str, model: str):
+
+def get_llm(backend: str = None, model: str = None):
     """Get a LangChain chat model for the given backend."""
+    backend = backend or DEFAULT_BACKEND
+    model = model or DEFAULT_MODEL
+
     if backend == "ollama":
         return ChatOllama(model=model)
     elif backend == "claude":
         return ChatAnthropic(model_name=model)
+    elif backend == "claude-code":
+        # Claude Code backend is handled separately via run_claude_code()
+        raise ValueError("claude-code backend must use run_claude_code() directly")
     else:
         raise ValueError(f"Unknown backend: {backend}")
+
+
+def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None) -> str:
+    """Run Claude Code CLI in headless mode and return the response.
+
+    Args:
+        prompt: The prompt to send to Claude Code
+        system_prompt: Optional system prompt (prepended to user prompt)
+        cwd: Working directory for Claude Code (for file access)
+
+    Returns:
+        The text response from Claude Code
+    """
+    # Combine system prompt and user prompt
+    full_prompt = prompt
+    if system_prompt:
+        full_prompt = f"{system_prompt}\n\n---\n\n{prompt}"
+
+    cmd = ["claude", "--print", "-p", full_prompt]
+
+    print(f"\n{'='*60}")
+    print("Architect (claude-code):")
+    print(f"{'='*60}")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            timeout=300,  # 5 minute timeout
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr or "Unknown error"
+            print(f"Error: {error_msg}")
+            return f"ERROR: Claude Code failed: {error_msg}"
+
+        response = result.stdout.strip()
+        print(response)
+        return response
+
+    except subprocess.TimeoutExpired:
+        print("Error: Claude Code timed out")
+        return "ERROR: Claude Code timed out after 5 minutes"
+    except FileNotFoundError:
+        print("Error: Claude Code CLI not found")
+        return "ERROR: Claude Code CLI not installed or not in PATH"
 
 
 def send_message(backend: str, model: str, system_prompt: str, messages: list[dict]) -> str:
@@ -92,16 +148,10 @@ Respond naturally and concisely. You are {self.name}."""
 
 
 def load_personas(config_path: str | Path | None = None) -> dict[str, Persona]:
-    """Load personas from JSON config file."""
-    if config_path is None:
-        config_path = Path(__file__).parent / "personas.json"
-    else:
-        config_path = Path(config_path)
+    """Load agents from config. (config_path ignored, kept for compatibility)"""
+    return {name: Persona.from_dict(get_agent_config(name)) for name in list_agents()}
 
-    if not config_path.exists():
-        raise FileNotFoundError(f"Personas config not found: {config_path}")
 
-    with open(config_path) as f:
-        data = json.load(f)
-
-    return {key: Persona.from_dict(value) for key, value in data.items()}
+# Aliases for transition to "agent" terminology
+Agent = Persona
+load_agents = load_personas
