@@ -1,70 +1,44 @@
-"""Shared persona loading and AI backend utilities."""
+"""Shared persona loading and LangChain-based AI backends."""
 
 import json
-import subprocess
-import requests
 from pathlib import Path
 
+from langchain_ollama import ChatOllama
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-def send_ollama_message(model: str, system_prompt: str, messages: list[dict]) -> str:
-    """Send messages to Ollama and get a response."""
-    url = "http://localhost:11434/api/chat"
 
-    payload = {
-        "model": model,
-        "messages": [{"role": "system", "content": system_prompt}] + messages,
-        "stream": True,
-    }
+def get_llm(backend: str, model: str):
+    """Get a LangChain chat model for the given backend."""
+    if backend == "ollama":
+        return ChatOllama(model=model)
+    elif backend == "claude":
+        return ChatAnthropic(model_name=model)
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
 
-    response = requests.post(url, json=payload, stream=True)
-    response.raise_for_status()
 
+def send_message(backend: str, model: str, system_prompt: str, messages: list[dict]) -> str:
+    """Send messages using LangChain and get a response with streaming."""
+    llm = get_llm(backend, model)
+
+    # Convert to LangChain message format
+    lc_messages = [SystemMessage(content=system_prompt)]
+    for msg in messages:
+        if msg["role"] == "user":
+            lc_messages.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            lc_messages.append(AIMessage(content=msg["content"]))
+
+    # Stream the response
     full_response = ""
-    for line in response.iter_lines():
-        if line:
-            data = json.loads(line)
-            chunk = data.get("message", {}).get("content", "")
-            print(chunk, end="", flush=True)
-            full_response += chunk
-            if data.get("done"):
-                print()
-                break
+    for chunk in llm.stream(lc_messages):
+        content = chunk.content
+        print(content, end="", flush=True)
+        full_response += content
 
+    print()  # newline at end
     return full_response
-
-
-def send_claude_message(model: str, system_prompt: str, messages: list[dict]) -> str:
-    """Send messages to Claude CLI and get a response."""
-    # Build the prompt from messages
-    prompt = messages[-1]["content"] if messages else ""
-
-    # Include recent context in the prompt
-    context = ""
-    if len(messages) > 1:
-        context = "Recent conversation:\n"
-        for msg in messages[-10:-1]:  # Last 10 messages for context
-            context += f"{msg['content']}\n"
-        context += "\nNow respond to:\n"
-
-    full_prompt = context + prompt
-
-    cmd = [
-        "claude",
-        "-p",
-        "--model", model,
-        "--system-prompt", system_prompt,
-        full_prompt
-    ]
-
-    result = subprocess.run(cmd, capture_output=True, text=True)
-
-    if result.returncode != 0:
-        print(f"Error: {result.stderr}", flush=True)
-        return f"[Error: {result.stderr}]"
-
-    response = result.stdout.strip()
-    print(response, flush=True)
-    return response
 
 
 class Persona:
@@ -83,10 +57,7 @@ class Persona:
             print(f"{self.name} ({self.backend}:{self.model}):")
             print(f"{'='*60}")
 
-        if self.backend == "claude":
-            return send_claude_message(self.model, self.system_prompt, messages)
-        else:
-            return send_ollama_message(self.model, self.system_prompt, messages)
+        return send_message(self.backend, self.model, self.system_prompt, messages)
 
     def respond_with_history(self, user_message: str, conversation_context: list[str]) -> str:
         """Generate a response using persona's own history for continuity."""
@@ -104,10 +75,7 @@ Respond naturally and concisely. You are {self.name}."""
 
         self.history.append({"role": "user", "content": prompt})
 
-        if self.backend == "claude":
-            response = send_claude_message(self.model, self.system_prompt, self.history)
-        else:
-            response = send_ollama_message(self.model, self.system_prompt, self.history)
+        response = send_message(self.backend, self.model, self.system_prompt, self.history)
 
         self.history.append({"role": "assistant", "content": response})
         return response

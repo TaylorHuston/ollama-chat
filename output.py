@@ -1,12 +1,8 @@
 
 def reverse_string(s):
-  """Reverses a string.
+    return s[::-1]
 
-  Args:
-    s: The string to reverse.
+# Example usage
+print(reverse_string("Hello, World!"))  # Output: "!dlroW ,olleH"
 
-  Returns:
-    The reversed string.
-  """
-  return s[::-1]
 
