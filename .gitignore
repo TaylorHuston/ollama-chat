@@ -1,2 +1,4 @@
 __pycache__/
 workflow_runs/
+sessions/
+data.json
