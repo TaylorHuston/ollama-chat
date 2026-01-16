@@ -29,14 +29,17 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, TypedDict
 
 from langgraph.graph import StateGraph, END
 
 from personas import get_llm
 from tools import ALL_TOOLS
+from handoffs import WorkflowRun, list_runs, get_run, print_run_summary
 
 
 # =============================================================================
@@ -386,8 +389,21 @@ class Workflow:
         self._compiled = graph.compile()
         return self._compiled
 
-    def run(self, initial_state: dict, config: dict | None = None) -> dict:
-        """Run the workflow with the given initial state."""
+    def run(
+        self,
+        initial_state: dict,
+        config: dict | None = None,
+        persist: bool = False,
+        runs_dir: str | Path = "workflow_runs",
+    ) -> dict:
+        """Run the workflow with the given initial state.
+
+        Args:
+            initial_state: Initial state dictionary
+            config: Optional LangGraph config
+            persist: If True, save handoffs to disk
+            runs_dir: Directory for workflow runs
+        """
         print(f"\n{'='*60}")
         print(f"WORKFLOW: {self.name}")
         print(f"{'='*60}\n")
@@ -397,8 +413,15 @@ class Workflow:
             "iteration": 0,
             "max_iterations": 10,
             "messages": [],
+            "feedback": "",
             **initial_state,
         }
+
+        # Initialize persistence if enabled
+        workflow_run: WorkflowRun | None = None
+        if persist:
+            workflow_run = WorkflowRun(self.name, runs_dir=runs_dir)
+            workflow_run.initialize(state)
 
         graph = self.compile()
 
@@ -408,6 +431,16 @@ class Workflow:
             # step is a dict with node_name: output
             for node_name, output in step.items():
                 if output:
+                    # Record handoff before updating state
+                    if workflow_run:
+                        start_time = time.time()
+                        workflow_run.record_step(
+                            node=node_name,
+                            input_state={k: v for k, v in state.items() if k != "messages"},
+                            output_state=output,
+                            duration_ms=int((time.time() - start_time) * 1000),
+                        )
+
                     state.update(output)
             final_state = state
 
@@ -415,6 +448,10 @@ class Workflow:
             if state.get("iteration", 0) >= state.get("max_iterations", 10):
                 print(f"\n⚠️  Max iterations ({state['max_iterations']}) reached")
                 break
+
+        # Complete persistence
+        if workflow_run:
+            workflow_run.complete(final_state or {})
 
         print(f"\n{'='*60}")
         print(f"WORKFLOW COMPLETE")
@@ -519,7 +556,39 @@ def main():
     parser.add_argument("--visualize", action="store_true",
                         help="Show workflow structure and exit")
 
+    # Persistence options
+    parser.add_argument("--persist", action="store_true",
+                        help="Save workflow handoffs to disk")
+    parser.add_argument("--runs-dir", default="workflow_runs",
+                        help="Directory for workflow runs")
+    parser.add_argument("--list-runs", action="store_true",
+                        help="List all workflow runs")
+    parser.add_argument("--inspect", metavar="RUN_ID",
+                        help="Inspect a specific workflow run")
+
     args = parser.parse_args()
+
+    # Handle run inspection commands
+    if args.list_runs:
+        runs = list_runs(args.runs_dir)
+        if not runs:
+            print("No workflow runs found")
+            return
+
+        print(f"\n{'Status':<10} {'Workflow':<25} {'Run ID':<45}")
+        print("-" * 80)
+        for m in runs:
+            status_icon = {"completed": "✅", "failed": "❌", "running": "🔄"}.get(m.status, "❓")
+            print(f"{status_icon} {m.status:<7} {m.workflow_name:<25} {m.run_id:<45}")
+        return
+
+    if args.inspect:
+        try:
+            run = get_run(args.inspect, args.runs_dir)
+            print_run_summary(run)
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+        return
 
     # Create workflow
     workflow = create_spec_implement_review_workflow(
@@ -539,10 +608,14 @@ def main():
         return
 
     # Run workflow
-    result = workflow.run({
-        "task": args.task,
-        "max_iterations": args.max_iter,
-    })
+    result = workflow.run(
+        initial_state={
+            "task": args.task,
+            "max_iterations": args.max_iter,
+        },
+        persist=args.persist,
+        runs_dir=args.runs_dir,
+    )
 
     # Output results
     print(f"\n{'='*60}")
