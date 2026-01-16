@@ -11,6 +11,38 @@ Python CLI tools for chatting with Ollama models and experimenting with multi-AI
 - **Interactive Chat Room** - @ mention multiple personas in real-time
 - **Batch Processing** - Process markdown files and generate code
 
+## Quick Start
+
+```bash
+# Launch the REPL
+python3 cli.py
+
+# You'll see:
+# ╔═══════════════════════════════════════╗
+# ║           ollama-chat                 ║
+# ║     Multi-agent AI workflows          ║
+# ╚═══════════════════════════════════════╝
+# [gemma3:1b]>
+
+# Then use slash commands:
+/help                        # Show all commands
+/session                     # List all sessions
+/session my-project          # Start/resume session
+/workflow "Build a cache"    # Run workflow
+/agent "List files"          # Tool-calling agent
+/chat                        # Simple chat mode
+/collab "Design API"         # Two-persona collaboration
+/room                        # Multi-persona chat room
+/models                      # List available models
+/quit                        # Exit
+```
+
+You can also run commands directly:
+```bash
+python3 cli.py session
+python3 cli.py models
+```
+
 ## Setup
 
 ### Prerequisites
@@ -35,32 +67,44 @@ ollama pull gemma3:1b      # Good for fast chat/collaboration
 ollama pull qwen2.5:0.5b   # Ultra-lightweight option
 ```
 
+#### Optional: Install as CLI command
+
+```bash
+# Install as editable package (in a venv)
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# Now you can use:
+ollama-chat conv my-project
+oc workflow "Build X"  # 'oc' is a short alias
+```
+
 ### Dependencies
 
 - `langchain-core` - Base LangChain abstractions
 - `langchain-ollama` - Ollama integration
 - `langchain-anthropic` - Claude integration
 - `langgraph` - Workflow state graphs
+- `rich` - Terminal formatting
 - `requests` - HTTP client
 
-## Tools
+## Commands
 
-### 1. Session-Based Conversation (`conversation.py`)
+Launch the REPL with `python3 cli.py` and use these slash commands. Each feature can also be accessed via the standalone Python scripts.
 
-**The primary tool for interactive design work.** Natural language chat with persistent sessions that can extract specs and trigger implementation workflows.
+### 1. Sessions (`/session`)
+
+**The primary tool for interactive design work.** Named, persistent conversations that can extract specs and trigger implementation workflows.
 
 ```bash
-# Start or resume a session
-python3 conversation.py my-project
-
-# List all sessions
-python3 conversation.py -l
-
-# Force create new session (even if exists)
-python3 conversation.py my-project --new
-
-# Use a specific model
-python3 conversation.py my-project -m llama3.2:3b -b ollama
+# In the REPL:
+/session                      # List all sessions
+/session my-project           # Start or resume a session
+/session my-project --new     # Force create new session
+/session my-project --history # Show conversation history
+/session my-project --spec    # Show extracted spec
+/session my-project --delete  # Delete a session
 ```
 
 **In-chat commands:**
@@ -77,39 +121,30 @@ python3 conversation.py my-project -m llama3.2:3b -b ollama
 ```
 
 **Typical workflow:**
-1. Start a session: `python3 conversation.py api-design`
-2. Have a natural conversation to design your feature
-3. Type `/summarize` to extract a structured spec
-4. Type `/workflow` to automatically implement it
-5. Resume later with `python3 conversation.py api-design`
+1. Launch: `python3 cli.py`
+2. Start a session: `/session api-design`
+3. Have a natural conversation to design your feature
+4. Type `/summarize` to extract a structured spec
+5. Type `/workflow` to automatically implement it
+6. Resume later: `/session api-design`
 
 ---
 
-### 2. Workflow Framework (`workflow.py`)
+### 2. Workflow Framework (`/workflow`)
 
 Deterministic multi-agent pipelines with conditional routing, feedback loops, and full audit trails.
 
 ```bash
-# Run the spec-implement-review workflow
-python3 workflow.py "Write a function to merge two sorted lists"
+# In the REPL:
+/workflow "Write a function to merge two sorted lists"
+/workflow --persist "Implement quicksort"    # Save run history
+/workflow --list-runs                         # List previous runs
+/workflow --inspect <run-id>                  # Inspect a specific run
+/workflow --visualize                         # Show workflow structure
 
-# Customize models
-python3 workflow.py --spec-model gemma3:1b --impl-model llama3.2:3b "Build a cache class"
-
-# Set pass threshold (0-100)
-python3 workflow.py --threshold 90 "Create a binary search function"
-
-# Persist run history for debugging
-python3 workflow.py --persist "Implement quicksort"
-
-# List previous runs
-python3 workflow.py --list-runs
-
-# Inspect a specific run
-python3 workflow.py --inspect 20250115_142030_spec_implement_review
-
-# Visualize workflow structure
-python3 workflow.py --visualize
+# Set model before running:
+/model gemma3:1b
+/workflow "Build a cache class"
 ```
 
 **Built-in workflow: spec_implement_review**
@@ -165,28 +200,17 @@ result = workflow.run({"task": "Create a hello world file"}, persist=True)
 
 ---
 
-### 3. Tool-Calling Agent (`agent.py`)
+### 3. Tool-Calling Agent (`/agent`)
 
 An AI agent with filesystem and shell access. Can autonomously complete tasks by calling tools.
 
 ```bash
-# Single task
-python3 agent.py "List all Python files in this directory"
-
-# File operations
-python3 agent.py "Read requirements.txt and summarize the dependencies"
-
-# Code generation
-python3 agent.py "Create a hello.py file that prints Hello World"
-
-# Shell commands
-python3 agent.py "What's the current git branch?"
-
-# Interactive mode
-python3 agent.py
-
-# Use a different model (must support tool calling)
-python3 agent.py -m llama3.1 "Your task here"
+# In the REPL:
+/agent "List all Python files in this directory"
+/agent "Read requirements.txt and summarize the dependencies"
+/agent "Create a hello.py file that prints Hello World"
+/agent "What's the current git branch?"
+/agent                    # Interactive mode - enter multiple tasks
 ```
 
 **Available tools:**
@@ -207,59 +231,39 @@ Models like `gemma3:1b` and `qwen2.5:0.5b` do NOT support tool calling.
 
 ---
 
-### 4. Simple Chat (`chat.py`)
+### 4. Simple Chat (`/chat`)
 
 Basic single-model chat interface.
 
 ```bash
-# List available models
-python3 chat.py -l
-
-# One-shot message
-python3 chat.py "What is the capital of France?"
-
-# Use a specific model
-python3 chat.py -m gemma3:1b "Explain quantum computing"
-
-# Interactive chat mode (default)
-python3 chat.py
+# In the REPL:
+/models                                   # List available models
+/chat "What is the capital of France?"    # One-shot message
+/model gemma3:1b                          # Set model
+/chat                                     # Interactive chat mode
 ```
 
 ---
 
-### 5. Multi-Persona Collaboration (`collab.py`)
+### 5. Multi-Persona Collaboration (`/collab`)
 
 Two AI personas collaborate on a task, passing context back and forth.
 
 ```bash
-# Default: Architect + Developer
-python3 collab.py "Design a key-value store"
-
-# Different personas
-python3 collab.py -p1 creative -p2 critic "Ideas for a mobile game"
-
-# Mix Ollama and Claude
-python3 collab.py -p1 claude -p2 developer "Write a sorting function"
-
-# More collaboration rounds
-python3 collab.py -r 5 "Build a caching strategy"
-
-# List available personas
-python3 collab.py -l
+# In the REPL:
+/collab "Design a key-value store"        # Default: Architect + Developer
+/collab --list                            # List available personas
 ```
 
 ---
 
-### 6. Interactive Chat Room (`chat_room.py`)
+### 6. Interactive Chat Room (`/room`)
 
 Chat with multiple AI personas using @ mentions.
 
 ```bash
-# Start with default personas (architect, developer)
-python3 chat_room.py
-
-# Start with specific personas
-python3 chat_room.py -p architect claude critic
+# In the REPL:
+/room                     # Start with default personas (architect, developer)
 ```
 
 **Chat room commands:**
@@ -278,51 +282,23 @@ python3 chat_room.py -p architect claude critic
 
 ---
 
-### 7. Batch Processing (`batch.py`)
+### 7. Batch Processing (`/batch`)
 
 Process markdown files with AI and extract code to runnable files.
 
 ```bash
-# Process INPUT.md -> output files
-python3 batch.py
-
-# Custom input/output
-python3 batch.py -i prompt.md -o result.py
-
-# Use a specific persona
-python3 batch.py -p developer
-
-# Use Claude
-python3 batch.py -p claude
-```
-
----
-
-### 8. Session Management (`sessions.py`)
-
-Manage persistent conversation sessions directly.
-
-```bash
-# List all sessions
-python3 sessions.py -l
-
-# Show session details
-python3 sessions.py my-project
-
-# Show conversation history
-python3 sessions.py my-project --history
-
-# Show saved spec
-python3 sessions.py my-project --spec
-
-# Delete a session
-python3 sessions.py my-project --delete
+# In the REPL:
+/batch                              # Process INPUT.md -> output.py
+/batch -i prompt.md -o result.py    # Custom input/output
+/batch -p claude                    # Use Claude persona
 ```
 
 ## Architecture
 
 ```
 ollama-chat/
+├── cli.py           # Unified REPL entry point
+├── pyproject.toml   # Package configuration
 ├── conversation.py  # Session-aware chat with /summarize and /workflow
 ├── workflow.py      # Deterministic multi-agent workflows (LangGraph)
 ├── agent.py         # Tool-calling autonomous agent

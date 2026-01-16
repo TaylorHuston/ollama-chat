@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ollama-chat"
+version = "0.1.0"
+description = "Multi-agent AI workflows with Ollama and Claude"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "langchain-core",
+    "langchain-ollama",
+    "langchain-anthropic",
+    "langgraph",
+    "rich",
+]
+
+[project.scripts]
+ollama-chat = "cli:main"
+oc = "cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "ruff",
+]
+
+[tool.setuptools]
+py-modules = [
+    "cli",
+    "chat",
+    "collab",
+    "chat_room",
+    "batch",
+    "agent",
+    "workflow",
+    "conversation",
+    "sessions",
+    "handoffs",
+    "personas",
+    "tools",
+]
