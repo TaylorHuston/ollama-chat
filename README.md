@@ -226,6 +226,7 @@ ollama-chat/
 ├── chat_room.py     # Interactive multi-persona chat room
 ├── batch.py         # Markdown to code batch processing
 ├── agent.py         # Tool-calling autonomous agent
+├── workflow.py      # Deterministic multi-agent workflows (LangGraph)
 ├── personas.py      # Shared persona/LLM utilities (LangChain)
 ├── tools.py         # LangChain tool definitions
 ├── personas.json    # Persona configuration
@@ -272,6 +273,78 @@ Use smaller models:
 - `qwen2.5:0.5b` (397 MB)
 - `gemma3:1b` (815 MB)
 - `llama3.2:3b` (2.0 GB)
+
+### 6. Workflow Framework (`workflow.py`)
+
+Deterministic multi-agent pipelines with conditional routing and feedback loops.
+
+```bash
+# Run the spec-implement-review workflow
+python3 workflow.py "Write a function to merge two sorted lists"
+
+# Customize models
+python3 workflow.py --spec-model gemma3:1b --impl-model llama3.2:3b --review-model gemma3:1b "Build a cache class"
+
+# Set pass threshold (0-100)
+python3 workflow.py --threshold 90 "Create a binary search function"
+
+# Limit iterations
+python3 workflow.py --max-iter 5 --threshold 95 "Implement quicksort"
+
+# Visualize workflow structure
+python3 workflow.py --visualize
+```
+
+**Built-in workflow: spec_implement_review**
+```
+spec (write detailed specification)
+  ↓
+implement (generate code from spec)
+  ↓
+review (score 0-100 + feedback)
+  ↓
+score >= threshold? → DONE
+  ↓ (no)
+implement (with feedback) ← loop
+```
+
+**Creating custom workflows:**
+
+```python
+from workflow import (
+    Workflow, LLMNode, SpecWriterNode,
+    ImplementerNode, ReviewerNode, ToolNode
+)
+
+# Define a custom workflow
+workflow = (
+    Workflow("my_workflow")
+    .add_node("plan", LLMNode(
+        model="gemma3:1b",
+        system_prompt="You are a planner...",
+        prompt_template="Plan this: {task}",
+        output_key="plan"
+    ))
+    .add_node("execute", ToolNode(
+        model="llama3.2:3b",
+        prompt_template="Execute this plan: {plan}"
+    ))
+    .add_edge("plan", "execute")
+    .set_entry("plan")
+)
+
+result = workflow.run({"task": "Create a hello world file"})
+```
+
+**Available node types:**
+
+| Node | Purpose |
+|------|---------|
+| `LLMNode` | Base node - invoke LLM with prompt template |
+| `SpecWriterNode` | Write detailed specifications |
+| `ImplementerNode` | Generate code from specs |
+| `ReviewerNode` | Review code, output score + feedback |
+| `ToolNode` | LLM with tool-calling capabilities |
 
 ## License
 
