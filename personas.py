@@ -26,13 +26,14 @@ def get_llm(backend: str = None, model: str = None):
         raise ValueError(f"Unknown backend: {backend}")
 
 
-def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None) -> str:
+def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None, model: str = None) -> str:
     """Run Claude Code CLI in headless mode and return the response.
 
     Args:
         prompt: The prompt to send to Claude Code
         system_prompt: Optional system prompt (prepended to user prompt)
         cwd: Working directory for Claude Code (for file access)
+        model: Model to use (opus, sonnet, haiku). Defaults to Claude Code's default.
 
     Returns:
         The text response from Claude Code
@@ -43,9 +44,12 @@ def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None) -> 
         full_prompt = f"{system_prompt}\n\n---\n\n{prompt}"
 
     cmd = ["claude", "--print", "-p", full_prompt]
+    if model:
+        cmd.extend(["--model", model])
 
+    model_label = f" ({model})" if model else ""
     print(f"\n{'='*60}")
-    print("Architect (claude-code):")
+    print(f"Claude Code{model_label}:")
     print(f"{'='*60}")
 
     try:

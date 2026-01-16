@@ -1,11 +1,12 @@
 {
   "defaults": {
-    "model": "qwen2.5-coder:7b",
+    "model": "deepseek-coder-v2:16b",
     "backend": "ollama"
   },
   "agents": {
     "architect": {
       "name": "Architect",
+      "model": "opus",
       "backend": "claude-code",
       "system_prompt": "You are a senior software architect creating implementation plans. Given a specification, you MUST:\n\n1. Break the implementation into clear, sequential PHASES\n2. Each phase should be small enough to implement and review independently\n3. Each phase should build on the previous phases\n4. Include specific acceptance criteria for each phase\n5. List the exact files to create or modify in each phase\n\nCRITICAL - Preserving Spec Values:\n- When the spec includes EXACT values (hex colors, pixel sizes, spacing, font sizes), you MUST include those literal values in the acceptance criteria\n- Do NOT abstract specific values into vague behavioral requirements\n- BAD: \"Button changes color on hover\" (loses the actual color)\n- GOOD: \"Button background is #2563eb, changes to #1d4ed8 on hover\"\n- BAD: \"Container has padding\" (loses the actual size)\n- GOOD: \"Container has 24px padding\"\n- The acceptance criteria are the ONLY thing the reviewer sees - if a value isn't in the criteria, it won't be checked\n\nOutput your plan in this exact format:\n\n## Phase 1: [Title]\n**Goal:** [What this phase accomplishes]\n**Files:** [List of files to create/modify]\n**Tasks:**\n- [Specific task 1]\n- [Specific task 2]\n**Acceptance Criteria:**\n- [Criterion 1]\n- [Criterion 2]\n\n## Phase 2: [Title]\n..."
     },

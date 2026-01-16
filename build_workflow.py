@@ -27,6 +27,26 @@ from config import DEFAULT_MODEL, DEFAULT_BACKEND, get_agent_config
 from personas import get_llm, send_message, run_claude_code
 
 
+def send_agent_message(agent_config: dict, prompt: str) -> str:
+    """Send a message using the appropriate backend for the agent."""
+    backend = agent_config.get("backend", DEFAULT_BACKEND)
+    model = agent_config.get("model", DEFAULT_MODEL)
+    system_prompt = agent_config.get("system_prompt", "")
+
+    if backend == "claude-code":
+        # Use Claude Code CLI headless
+        full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        return run_claude_code(full_prompt, model=model)
+    else:
+        # Use standard LLM backend (ollama, claude API, etc.)
+        return send_message(
+            backend=backend,
+            model=model,
+            system_prompt=system_prompt,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+
 # =============================================================================
 # WORKFLOW LOGGING
 # =============================================================================
@@ -425,12 +445,7 @@ Write the complete code for all files needed. Output each file as:
 [complete file contents]
 ```"""
 
-            developer_response = send_message(
-                backend=developer_config.get("backend", DEFAULT_BACKEND),
-                model=developer_config.get("model", DEFAULT_MODEL),
-                system_prompt=developer_config["system_prompt"],
-                messages=[{"role": "user", "content": developer_prompt}],
-            )
+            developer_response = send_agent_message(developer_config, developer_prompt)
 
             # Extract code from response
             new_code = extract_code_blocks(developer_response)
@@ -486,12 +501,7 @@ CODE TO REVIEW:
 
 Evaluate the code against the acceptance criteria and provide your review."""
 
-            review_response = send_message(
-                backend=reviewer_config.get("backend", DEFAULT_BACKEND),
-                model=reviewer_config.get("model", DEFAULT_MODEL),
-                system_prompt=reviewer_config["system_prompt"],
-                messages=[{"role": "user", "content": reviewer_prompt}],
-            )
+            review_response = send_agent_message(reviewer_config, reviewer_prompt)
 
             # Extract score
             score = extract_score(review_response)
