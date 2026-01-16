@@ -1,33 +1,10 @@
-"""Tools for AI personas to interact with the filesystem and shell.
-
-These are designed to be LangChain-compatible when we add that dependency,
-but work standalone for now.
-"""
+"""LangChain tools for AI personas to interact with filesystem and shell."""
 
 import os
 import subprocess
 from pathlib import Path
-from typing import Callable
 
-
-# Simple tool registry
-TOOLS: dict[str, Callable] = {}
-
-
-def tool(func: Callable) -> Callable:
-    """Register a function as a tool.
-
-    This decorator is a placeholder that mimics LangChain's @tool.
-    When we add LangChain, we can swap to their decorator.
-    """
-    # Store metadata for later use
-    func.is_tool = True
-    func.tool_name = func.__name__
-    func.tool_description = func.__doc__ or ""
-
-    # Register in our tool registry
-    TOOLS[func.__name__] = func
-    return func
+from langchain_core.tools import tool
 
 
 @tool
@@ -36,9 +13,6 @@ def read_file(path: str) -> str:
 
     Args:
         path: Path to the file to read
-
-    Returns:
-        The file contents as a string
     """
     try:
         return Path(path).read_text()
@@ -55,9 +29,6 @@ def write_file(path: str, content: str) -> str:
     Args:
         path: Path to the file to write
         content: Content to write to the file
-
-    Returns:
-        Success or error message
     """
     try:
         p = Path(path)
@@ -74,9 +45,6 @@ def list_files(path: str = ".") -> str:
 
     Args:
         path: Directory path to list (default: current directory)
-
-    Returns:
-        Newline-separated list of files and directories
     """
     try:
         entries = []
@@ -96,9 +64,6 @@ def run_command(command: str) -> str:
 
     Args:
         command: The shell command to run
-
-    Returns:
-        Command output (stdout and stderr combined)
     """
     try:
         result = subprocess.run(
@@ -124,9 +89,6 @@ def search_files(pattern: str, path: str = ".") -> str:
     Args:
         pattern: Glob pattern (e.g., "*.py", "**/*.json")
         path: Directory to search in (default: current directory)
-
-    Returns:
-        Newline-separated list of matching file paths
     """
     try:
         matches = list(Path(path).glob(pattern))
@@ -137,58 +99,15 @@ def search_files(pattern: str, path: str = ".") -> str:
         return f"Error searching files: {e}"
 
 
-def get_tool_schema(func: Callable) -> dict:
-    """Generate a tool schema for function calling APIs.
-
-    This format works with both Ollama and Claude/OpenAI APIs.
-    """
-    import inspect
-
-    sig = inspect.signature(func)
-    properties = {}
-    required = []
-
-    for name, param in sig.parameters.items():
-        # Basic type mapping
-        type_map = {str: "string", int: "integer", float: "number", bool: "boolean"}
-        param_type = "string"  # default
-
-        if param.annotation != inspect.Parameter.empty:
-            param_type = type_map.get(param.annotation, "string")
-
-        properties[name] = {"type": param_type}
-
-        if param.default == inspect.Parameter.empty:
-            required.append(name)
-
-    return {
-        "type": "function",
-        "function": {
-            "name": func.__name__,
-            "description": func.__doc__.split("\n")[0] if func.__doc__ else "",
-            "parameters": {
-                "type": "object",
-                "properties": properties,
-                "required": required
-            }
-        }
-    }
-
-
-def list_tools() -> None:
-    """Print all registered tools."""
-    print("Available tools:")
-    for name, func in TOOLS.items():
-        desc = func.__doc__.split("\n")[0] if func.__doc__ else "No description"
-        print(f"  {name}: {desc}")
+# Export all tools as a list for easy binding
+ALL_TOOLS = [read_file, write_file, list_files, run_command, search_files]
 
 
 if __name__ == "__main__":
     # Quick test
-    list_tools()
+    print("Available tools:")
+    for t in ALL_TOOLS:
+        print(f"  {t.name}: {t.description.split(chr(10))[0]}")
     print()
-    print("Testing tools:")
-    print("-" * 40)
-    print(f"list_files('.'):\n{list_files('.')}")
-    print()
-    print(f"run_command('echo hello'):\n{run_command('echo hello')}")
+    print("Testing list_files('.'):")
+    print(list_files.invoke("."))
