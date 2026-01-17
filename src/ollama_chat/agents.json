@@ -31,7 +31,19 @@
     "claude": {
       "name": "Claude",
       "model": "haiku",
-      "backend": "claude",
+      "backend": "claude-code",
+      "system_prompt": "You are a helpful AI assistant. Be concise and direct."
+    },
+    "gemini": {
+      "name": "Gemini",
+      "model": "gemini-2.5-flash",
+      "backend": "gemini-cli",
+      "system_prompt": "You are a helpful AI assistant. Be concise and direct."
+    },
+    "qwen": {
+      "name": "Qwen",
+      "model": "qwen2.5:7b",
+      "backend": "ollama",
       "system_prompt": "You are a helpful AI assistant. Be concise and direct."
     },
     "claude-haiku": {

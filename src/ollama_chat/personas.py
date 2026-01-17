@@ -26,6 +26,53 @@ def get_llm(backend: str = None, model: str = None):
         raise ValueError(f"Unknown backend: {backend}")
 
 
+def run_gemini_cli(prompt: str, system_prompt: str = None, cwd: str = None, model: str = None) -> str:
+    """Run Gemini CLI in headless mode and return the response.
+
+    Args:
+        prompt: The prompt to send to Gemini CLI
+        system_prompt: Optional system prompt (prepended to user prompt)
+        cwd: Working directory for Gemini CLI
+        model: Model to use (e.g., gemini-2.5-flash). Defaults to Gemini CLI's default.
+
+    Returns:
+        The text response from Gemini CLI
+    """
+    # Combine system prompt and user prompt
+    full_prompt = prompt
+    if system_prompt:
+        full_prompt = f"{system_prompt}\n\n---\n\n{prompt}"
+
+    cmd = ["gemini", "-p", full_prompt]
+    if model:
+        cmd.extend(["-m", model])
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            timeout=300,  # 5 minute timeout
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr or "Unknown error"
+            print(f"Error: {error_msg}")
+            return f"ERROR: Gemini CLI failed: {error_msg}"
+
+        response = result.stdout.strip()
+        print(response)
+        return response
+
+    except subprocess.TimeoutExpired:
+        print("Error: Gemini CLI timed out")
+        return "ERROR: Gemini CLI timed out after 5 minutes"
+    except FileNotFoundError:
+        print("Error: Gemini CLI not found")
+        return "ERROR: Gemini CLI not installed or not in PATH"
+
+
 def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None, model: str = None) -> str:
     """Run Claude Code CLI in headless mode and return the response.
 
@@ -46,11 +93,6 @@ def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None, mod
     cmd = ["claude", "--print", "-p", full_prompt]
     if model:
         cmd.extend(["--model", model])
-
-    model_label = f" ({model})" if model else ""
-    print(f"\n{'='*60}")
-    print(f"Claude Code{model_label}:")
-    print(f"{'='*60}")
 
     try:
         result = subprocess.run(
@@ -80,6 +122,34 @@ def run_claude_code(prompt: str, system_prompt: str = None, cwd: str = None, mod
 
 def send_message(backend: str, model: str, system_prompt: str, messages: list[dict]) -> str:
     """Send messages using LangChain and get a response with streaming."""
+    # Handle CLI backends separately
+    if backend in ("claude-code", "gemini-cli"):
+        # Build conversation context from messages
+        # Format as clear conversation transcript for context
+        if len(messages) == 1:
+            # Single message, just send it directly
+            prompt = messages[0]["content"]
+        else:
+            # Multiple messages, format as conversation history
+            context_parts = []
+            for msg in messages[:-1]:  # All but the last message
+                role = "User" if msg["role"] == "user" else "Assistant"
+                context_parts.append(f"{role}: {msg['content']}")
+
+            history = "\n\n".join(context_parts)
+            current_msg = messages[-1]["content"]
+            prompt = f"""Previous conversation:
+{history}
+
+---
+
+Now respond to: {current_msg}"""
+
+        if backend == "claude-code":
+            return run_claude_code(prompt, system_prompt, model=model)
+        else:  # gemini-cli
+            return run_gemini_cli(prompt, system_prompt, model=model)
+
     llm = get_llm(backend, model)
 
     # Convert to LangChain message format
