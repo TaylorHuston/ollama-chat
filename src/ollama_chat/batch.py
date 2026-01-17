@@ -4,7 +4,7 @@
 import argparse
 import re
 from pathlib import Path
-from personas import load_personas
+from .personas import load_personas
 
 
 def extract_code_blocks(text: str, language: str = "python") -> str:

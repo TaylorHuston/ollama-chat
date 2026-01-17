@@ -19,9 +19,9 @@ dependencies = [
 ]
 
 [project.scripts]
-ollama-chat = "cli:main"
-oc = "cli:main"
-oc-build = "build_workflow:main"
+ollama-chat = "ollama_chat.cli:main"
+oc = "ollama_chat.cli:main"
+oc-build = "ollama_chat.build_workflow:main"
 
 [project.optional-dependencies]
 dev = [
@@ -30,23 +30,8 @@ dev = [
     "ruff",
 ]
 
-[tool.setuptools]
-py-modules = [
-    "cli",
-    "chat",
-    "collab",
-    "chat_room",
-    "batch",
-    "agent",
-    "workflow",
-    "build_workflow",
-    "conversation",
-    "sessions",
-    "handoffs",
-    "personas",
-    "tools",
-    "config",
-]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
-"*" = ["agents.json"]
+ollama_chat = ["agents.json"]

@@ -2,7 +2,7 @@
 """Two AI personas collaborating on a task."""
 
 import argparse
-from personas import load_personas, Persona
+from .personas import load_personas, Persona
 
 
 def run_collaboration(persona1: Persona, persona2: Persona, task: str, rounds: int = 3):

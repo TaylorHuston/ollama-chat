@@ -22,7 +22,7 @@ import shlex
 import sys
 from typing import Optional
 
-from config import DEFAULT_MODEL, DEFAULT_BACKEND
+from .config import DEFAULT_MODEL, DEFAULT_BACKEND
 
 # Rich for nice output (comes with typer[all])
 try:
@@ -162,7 +162,7 @@ def cmd_status(args: list[str]):
 
 def cmd_models(args: list[str]):
     """List available Ollama models."""
-    from chat import list_models
+    from .chat import list_models
     models = list_models()
     echo("Available models:")
     for m in models:
@@ -193,7 +193,7 @@ def cmd_backend(args: list[str]):
 
 def _get_sessions_list():
     """Get sessions as a list with stable ordering for numeric IDs."""
-    from sessions import list_sessions
+    from .sessions import list_sessions
     sessions = list_sessions()
     # Sort by updated_at descending (most recent first)
     return sorted(sessions, key=lambda s: s.updated_at or "", reverse=True)
@@ -215,8 +215,8 @@ def _resolve_session_name(identifier: str) -> str | None:
 
 def cmd_session(args: list[str]):
     """Manage and interact with conversation sessions."""
-    from sessions import Session, delete_session
-    from conversation import chat_loop
+    from .sessions import Session, delete_session
+    from .conversation import chat_loop
 
     # No args = list all sessions
     if not args:
@@ -303,8 +303,8 @@ def cmd_session(args: list[str]):
 
 def cmd_workflow(args: list[str]):
     """Run a workflow."""
-    from workflow import create_spec_implement_review_workflow
-    from handoffs import list_runs, get_run, print_run_summary
+    from .workflow import create_spec_implement_review_workflow
+    from .handoffs import list_runs, get_run, print_run_summary
 
     # Handle --list-runs
     if "--list-runs" in args:
@@ -405,7 +405,7 @@ Workflow: spec_implement_review
 
 def cmd_agent(args: list[str]):
     """Run the tool-calling agent."""
-    from agent import run_agent
+    from .agent import run_agent
 
     if args:
         task = " ".join(args)
@@ -431,7 +431,7 @@ def cmd_agent(args: list[str]):
 
 def cmd_chat(args: list[str]):
     """Simple chat."""
-    from chat import chat as send_chat, interactive_chat
+    from .chat import chat as send_chat, interactive_chat
 
     if args:
         message = " ".join(args)
@@ -442,7 +442,7 @@ def cmd_chat(args: list[str]):
 
 def cmd_collab(args: list[str]):
     """Two-persona collaboration."""
-    from personas import load_personas
+    from .personas import load_personas
     from collab import run_collaboration
 
     personas = load_personas()
@@ -471,8 +471,8 @@ def cmd_collab(args: list[str]):
 
 def cmd_room(args: list[str]):
     """Multi-persona chat room."""
-    from chat_room import ChatRoom
-    from personas import load_personas
+    from .chat_room import ChatRoom
+    from .personas import load_personas
 
     all_personas = load_personas()
     default_personas = ["architect", "developer"]
@@ -489,7 +489,7 @@ def cmd_room(args: list[str]):
 
 def cmd_batch(args: list[str]):
     """Batch processing."""
-    from batch import run_batch
+    from .batch import run_batch
 
     input_file = "INPUT.md"
     output_file = "output.py"

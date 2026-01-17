@@ -4,9 +4,9 @@
 import argparse
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from config import DEFAULT_MODEL, DEFAULT_BACKEND
-from personas import get_llm
-from tools import ALL_TOOLS
+from .config import DEFAULT_MODEL, DEFAULT_BACKEND
+from .personas import get_llm
+from .tools import ALL_TOOLS
 
 
 def run_agent(

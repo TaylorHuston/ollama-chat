@@ -23,7 +23,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
-from config import DEFAULT_MODEL, DEFAULT_BACKEND
+from .config import DEFAULT_MODEL, DEFAULT_BACKEND
 
 
 # =============================================================================

@@ -23,8 +23,8 @@ from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
-from config import DEFAULT_MODEL, DEFAULT_BACKEND, get_agent_config
-from personas import get_llm, send_message, run_claude_code
+from .config import DEFAULT_MODEL, DEFAULT_BACKEND, get_agent_config
+from .personas import get_llm, send_message, run_claude_code
 
 
 def send_agent_message(agent_config: dict, prompt: str) -> str:

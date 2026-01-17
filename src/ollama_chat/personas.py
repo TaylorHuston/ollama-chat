@@ -7,7 +7,7 @@ from langchain_ollama import ChatOllama
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-from config import DEFAULT_MODEL, DEFAULT_BACKEND, get_agent_config, list_agents
+from .config import DEFAULT_MODEL, DEFAULT_BACKEND, get_agent_config, list_agents
 
 
 def get_llm(backend: str = None, model: str = None):

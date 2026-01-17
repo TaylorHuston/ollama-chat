@@ -3,7 +3,7 @@
 
 import argparse
 import readline  # enables arrow keys, history in input()
-from personas import load_personas, Persona
+from .personas import load_personas, Persona
 
 
 def print_help():

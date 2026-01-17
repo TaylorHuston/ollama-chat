@@ -26,10 +26,10 @@ from __future__ import annotations
 import argparse
 import sys
 
-from config import DEFAULT_MODEL, DEFAULT_BACKEND
-from sessions import Session, list_sessions, DEFAULT_SESSIONS_DIR
-from personas import get_llm, send_message
-from workflow import create_spec_implement_review_workflow
+from .config import DEFAULT_MODEL, DEFAULT_BACKEND
+from .sessions import Session, list_sessions, DEFAULT_SESSIONS_DIR
+from .personas import get_llm, send_message
+from .workflow import create_spec_implement_review_workflow
 
 
 # =============================================================================
